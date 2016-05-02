@@ -85,7 +85,7 @@ for job in filenames:
     MakeJob(fullOutPath,job,filenames[job],args.minfill)
 
 if args.checkOutput:
-    filesPresent=subprocess.check_output(["/afs/cern.ch/project/eos/installation/0.3.4/bin/eos.select","ls", args.outPath])
+    filesPresent=subprocess.check_output(["/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select","ls", args.outPath])
     print filesPresent
 
 
