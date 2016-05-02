@@ -18,6 +18,8 @@ parser.add_argument('--minrun',  type=int, default=230000,help="Minimum run numb
 parser.add_argument('--isBatch', default=False, action="store_true", help="Doesn't pop up plots and only fills tree when CMS and BRIL data are present")
 parser.add_argument('-v', '--includeVertices', default=True, action="store_false", help="Include vertex counting (default true)")
 parser.add_argument('--eventBased', default=False, action="store_true", help="PCC ntuples are event based (default false--typically LS-based)")
+parser.add_argument('--collisionType', default="pp13TeV", help="Key for xsec (default: pp13TeV)")
+parser.add_argument('--vetoListFile', default="", help="File with list of modules to veto")
 parser.add_argument('--outPath', default="", help="The path for the output file")
 #parser.add_argument('--perBX', type=bool, default=False, action="store_true", help="Store PC lumi per BX")
 #                if args.perBX:
@@ -27,9 +29,21 @@ args = parser.parse_args()
 if args.nobril:
     args.brildir=""
 
+vetoList=[302126344,  302123024,  302122768,  302057496,  302123804,  302124308, 302126364,  302188820]
+if args.vetoListFile!="":
+    try:
+        vlFile=open(args.vetoListFile)
+        vetoList=[]
+        for line in vlFile.readlines():
+            try:
+                vetoList.append(int(line))
+            except:
+                print "Can't parse",line
+    except:
+        print "Failed to read veto list file",args.vetoListFile
+        sys.exit(0)
 
-vetoList=[302126344,  302123024,  302122768,  302057496,  302123804,  302124308,  
-302126364,  302188820]
+
 f_LHC = 11245.6
 t_LS=math.pow(2,18)/f_LHC
 xsec_ub=80000. #microbarn
@@ -447,13 +461,11 @@ newtree.Branch("validVertices_perBX_eff",  validVertices_perBX_eff, "validVertic
 
 
 PC_calib_xsec={}
-PC_calib_xsec["B0_pp13TeV"]=9.4e6
-PC_calib_xsec["B3p8_pp13TeV"]=9.4e6
+PC_calib_xsec["B0_pp13TeV"]=9.0e6
+PC_calib_xsec["B3p8_pp13TeV"]=9.0e6
 # scale with PLT 3.51E-28/4.95E-28*9.4
-PC_calib_xsec["B0_pp5TeV"]=6.7e6
-PC_calib_xsec["B3p8_pp5TeV"]=6.7e6
-
-collisionType="pp5TeV"
+PC_calib_xsec["B0_pp5TeV"]=6.45e6
+PC_calib_xsec["B3p8_pp5TeV"]=6.45e6
 
 hists={}
 PCCPerLayer=[118.,44.3,39.2,34.9,22.3,23.9] #from MC
@@ -619,8 +631,8 @@ for key in LSKeys:
                         PCBXid[ibx]=bxid
                         nPCPerBXid[ibx]=mean
                         totalPCperBX=mean*math.pow(2,18)
-                        PC_lumi_B0_perBX[ibx]=totalPCperBX/PC_calib_xsec["B0_"+collisionType]/t_LS
-                        PC_lumi_B3p8_perBX[ibx]=totalPCperBX/PC_calib_xsec["B3p8_"+collisionType]/t_LS
+                        PC_lumi_B0_perBX[ibx]=totalPCperBX/PC_calib_xsec["B0_"+args.collisionType]/t_LS
+                        PC_lumi_B3p8_perBX[ibx]=totalPCperBX/PC_calib_xsec["B3p8_"+args.collisionType]/t_LS
 
                         ibx=ibx+1
                         if ibx>nBX[0]:
@@ -630,12 +642,12 @@ for key in LSKeys:
             totalPC=nCluster[0]*math.pow(2,18)*nActiveBX[0]
             totalPCError=nClusterError[0]*math.pow(2,18)*nActiveBX[0]
             
-            PC_lumi_B0[0]=totalPC/PC_calib_xsec["B0_"+collisionType]/t_LS
-            PC_lumi_B3p8[0]=totalPC/PC_calib_xsec["B3p8_"+collisionType]/t_LS
-            PC_lumi_integrated_B0[0]=totalPC/PC_calib_xsec["B0_"+collisionType]
-            PC_lumi_integrated_B3p8[0]=totalPC/PC_calib_xsec["B3p8_"+collisionType]
-            PC_lumi_integrated_error_B0[0]=totalPCError/PC_calib_xsec["B0_"+collisionType]
-            PC_lumi_integrated_error_B3p8[0]=totalPCError/PC_calib_xsec["B3p8_"+collisionType]
+            PC_lumi_B0[0]=totalPC/PC_calib_xsec["B0_"+args.collisionType]/t_LS
+            PC_lumi_B3p8[0]=totalPC/PC_calib_xsec["B3p8_"+args.collisionType]/t_LS
+            PC_lumi_integrated_B0[0]=totalPC/PC_calib_xsec["B0_"+args.collisionType]
+            PC_lumi_integrated_B3p8[0]=totalPC/PC_calib_xsec["B3p8_"+args.collisionType]
+            PC_lumi_integrated_error_B0[0]=totalPCError/PC_calib_xsec["B0_"+args.collisionType]
+            PC_lumi_integrated_error_B3p8[0]=totalPCError/PC_calib_xsec["B3p8_"+args.collisionType]
             
         except:
             print "Failed in cmskey",key
