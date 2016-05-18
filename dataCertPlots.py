@@ -11,13 +11,32 @@ parser.add_argument('-r', '--runlist', type=str, default="", help="Minimum fill 
 parser.add_argument('-o', '--outDir',  type=str, default="", help="Path to output directory")
 parser.add_argument('-a', '--autogen', action='store_true', default=False, help="Auto generator list of runs from file")
 parser.add_argument('-b', '--batch',   action='store_true', default=False, help="Batch mode (doesn't make GUI TCanvases)")
+parser.add_argument('--csv', type=str, default="", help='The csv file of correction')
+parser.add_argument('-d', '--docorr', action='store_true', default=False, help="do PCC aftergolw correction")
 
 args = parser.parse_args()
 
 ROOT.gStyle.SetPadTickY(2)
 
+pcc_dict={}
+
+if args.csv!="":
+    file = open(args.csv)
+    lines = file.readlines()
+    for line in lines:
+        items = line.split(",")
+        fill = int(items[0])
+        runnum = int(items[1])
+        minLS = int(items[2])
+        maxLS = int(items[3])
+
+        pcc_dict[(fill, runnum)]=float(items[4])
+        print float(items[4])
+   
+print pcc_dict
 rebinLS=1
 scale=1
+PCCscale=1
 def ReStyleHistogram(hist,nRows=3):
     hist.GetXaxis().SetTitleSize(0.15*nRows/5)
     hist.GetXaxis().SetTitleOffset(-0.4)
@@ -92,6 +111,7 @@ print runsToCheck
 #246908,246919,246920,246923,246926,246930,246936,246951,246960,247068,247070,247073,247078,247079,247081,247252,247253,247262,247267,247377,247381
 
 tree.SetBranchStatus("*",0)
+tree.SetBranchStatus("fill",1)
 tree.SetBranchStatus("run",1)
 tree.SetBranchStatus("LS",1)
 tree.SetBranchStatus("hasBrilData",1)
@@ -156,6 +176,10 @@ yLabelPix="Pixel Cluster xsec (ub)"
 
 for ient in range(nentries):
     tree.GetEntry(ient)
+    pcc_corr=1
+    if args.docorr:
+        if pcc_dict.has_key((tree.fill, tree.run)):
+            pcc_corr=pcc_dict[(tree.fill, tree.run)]
     if tree.hasCMSData:
         if tree.nCluster>0:
             for layer in range(0,5):
@@ -185,18 +209,18 @@ for ient in range(nentries):
                 histlayers[layerkey]=ROOT.TH1F(str(tree.run)+"_layer"+str(layer+1),";Luminosity Section  ;"+yLabelPix,nBins[tree.run],0,runLSMax[tree.run])
                 ReStyleHistogram(histlayers[layerkey],3)
 
-        histpix[tree.run].Fill(tree.LS,tree.PC_xsec)
+        histpix[tree.run].Fill(tree.LS,tree.PC_xsec*PCCscale*pcc_corr)
         if (tree.HFLumi != 0):
-            histpix_HF[tree.run].Fill(tree.LS,tree.PC_xsec*tree.BestLumi/tree.HFLumi)
+            histpix_HF[tree.run].Fill(tree.LS,tree.PC_xsec*tree.BestLumi*PCCscale*pcc_corr/tree.HFLumi)
 
         if (tree.PLTLumi != 0):
-            histpix_PLT[tree.run].Fill(tree.LS,tree.PC_xsec*tree.BestLumi/tree.PLTLumi)
+            histpix_PLT[tree.run].Fill(tree.LS,tree.PC_xsec*tree.BestLumi*PCCscale*pcc_corr/tree.PLTLumi)
 
         if (tree.BCMFLumi != 0):
-            histpix_BCMF[tree.run].Fill(tree.LS,tree.PC_xsec*tree.BestLumi/tree.BCMFLumi)
+            histpix_BCMF[tree.run].Fill(tree.LS,tree.PC_xsec*tree.BestLumi*PCCscale*pcc_corr/tree.BCMFLumi)
 
         for layer in range(0,5):
-            histlayers[str(tree.run)+"_layer"+str(layer+1)].Fill(tree.LS,tree.PC_xsec_layers[layer])
+            histlayers[str(tree.run)+"_layer"+str(layer+1)].Fill(tree.LS,tree.PC_xsec_layers[layer]*PCCscale*pcc_corr)
 
     if tree.hasBrilData:
         key=tree.run
@@ -219,9 +243,10 @@ for ient in range(nentries):
             histBCMFLumi[key].Fill(tree.LS,tree.BCMFLumi_integrated)
             histPLTLumi[key].Fill(tree.LS,tree.PLTLumi_integrated)
             if tree.hasCMSData:
-                histPCLumiB3p8[key].Fill(tree.LS,tree.PC_lumi_integrated_B3p8)
+                histPCLumiB3p8[key].Fill(tree.LS,tree.PC_lumi_integrated_B3p8*PCCscale*pcc_corr)
         if tree.BestLumi_PU>0:
-            histPU[key].Fill(tree.LS,tree.BestLumi_PU)
+            histPU[key].Fill(tree.LS,tree.BestLumi_PU*PCCscale*pcc_corr)
+            print tree.BestLumi_PU
         if tree.HFLumi>0 and tree.BCMFLumi>0 and tree.BestLumi>0:
             # FIXME USE ACTUAL BEST LUMI STRING FROM TREE (NOT IN TREE YET)
             if tree.run not in bestHF.keys():
@@ -317,7 +342,7 @@ for run in runsToCheck:
         lineB3p8.Draw("same")
         legPixXSec.Draw("same")
         padpixxsec.Update()
-
+ 
     if run in histbest.keys():
         padlumis.cd(1)
         maxHist=GetMaximum([histbest[run],histHFLumi[run],histBCMFLumi[run],histPLTLumi[run],histPCLumiB3p8[run]],1.1)
@@ -325,6 +350,7 @@ for run in runsToCheck:
         if maxHist>2*histbest[run].GetMaximum():
             print "There is a serious outlier; setting max to 1.5*bestmax."
             maxHist=histbest[run].GetMaximum()*1.5
+
 
         histbest[run].SetLineColor(ROOT.kBlack)
         histbest[run].SetLineWidth(2*scale)
@@ -340,7 +366,7 @@ for run in runsToCheck:
         histPLTLumi[run].Draw("histsame")
         histPCLumiB3p8[run].SetLineColor(802)
         histPCLumiB3p8[run].Draw("histsame")
-        
+         
         leg=ROOT.TLegend(0.1,0.1,0.7,0.4)
         tot=1
         try:
@@ -472,6 +498,7 @@ for run in runsToCheck:
         stabLeg=ROOT.TLegend(0.5,0.20,0.9,0.43)
     
         for layer in range(5):
+    
             key=str(run)+"_PCClayer"+str(layer+1)
             mean,meanError=GetYAverage(PCClayers[key],True)
             print mean, meanError
@@ -485,6 +512,3 @@ for run in runsToCheck:
         stabLeg.Draw("same")
         stability.Update()
         stability.SaveAs(args.outDir+str(run)+"_stability.png")
-
-
-
