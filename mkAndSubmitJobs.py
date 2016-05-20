@@ -14,7 +14,9 @@ parser.add_argument("--nobril", default=False, action="store_true", help="No bri
 parser.add_argument("--beamonly", default=False, action="store_true", help="BRIL data only has beam info.")
 parser.add_argument("-q", "--queue", type=str, default="8nh", help="lxbatch queue (default:  8nh)")
 parser.add_argument('-v', '--includeVertices', default=True, action="store_false", help="Include vertex counting")
+parser.add_argument('--collisionType', default="pp13TeV", help="Key for xsec (default: pp13TeV)")
 parser.add_argument('-o', '--outPath', default="", help="Specify the path of the output files")
+parser.add_argument('--vetoListFile', default="", help="File with list of modules to veto")
 parser.add_argument('-c', '--checkOutput', default=False, action="store_true", help="Only submit jobs if output is not there already.")
 args=parser.parse_args()
 
@@ -36,7 +38,9 @@ def MakeJob(outputdir,jobid,filename,minfill):
         makeDataCMD=makeDataCMD+" -v"
     if args.beamonly:
         makeDataCMD=makeDataCMD+" --beamonly"
-    
+   
+    makeDataCMD=makeDataCMD+" --collisionType="+args.collisionType
+    makeDataCMD=makeDataCMD+" --vetoListFile="+args.vetoListFile
     #print makeDataCMD
     joblines.append(makeDataCMD)
     
@@ -56,7 +60,7 @@ def SubmitJob(job,queue="8nh"):
 
 
 # ls the eos directory
-fileinfos=subprocess.check_output(["/afs/cern.ch/project/eos/installation/0.3.4/bin/eos.select","ls", args.path])
+fileinfos=subprocess.check_output(["/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select","ls", args.path])
 fileinfos=fileinfos.split("\n")
 
 filenames={}
@@ -81,7 +85,7 @@ for job in filenames:
     MakeJob(fullOutPath,job,filenames[job],args.minfill)
 
 if args.checkOutput:
-    filesPresent=subprocess.check_output(["/afs/cern.ch/project/eos/installation/0.3.4/bin/eos.select","ls", args.outPath])
+    filesPresent=subprocess.check_output(["/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select","ls", args.outPath])
     print filesPresent
 
 
