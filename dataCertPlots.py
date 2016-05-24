@@ -225,11 +225,11 @@ for ient in range(nentries):
     if tree.hasBrilData:
         key=tree.run
         if not histbest.has_key(key):
-            histPCLumiB3p8[key]=ROOT.TH1F(str(tree.run)+"PCLumiB3p8",";Luminosity Section  ;Integrated Luminosity(ub^{-1})",nBins[tree.run],0,runLSMax[tree.run])
-            histbest[key]=ROOT.TH1F(str(tree.run)+"best",";Luminosity Section  ;Integrated Luminosity(ub^{-1})",nBins[tree.run],0,runLSMax[tree.run])
-            histHFLumi[key]=ROOT.TH1F(str(tree.run)+"HF",";Luminosity Section  ;Integrated Luminosity(ub^{-1})",nBins[tree.run],0,runLSMax[tree.run])
-            histBCMFLumi[key]=ROOT.TH1F(str(tree.run)+"BCMF",";Luminosity Section  ;Integrated Luminosity(ub^{-1})",nBins[tree.run],0,runLSMax[tree.run])
-            histPLTLumi[key]=ROOT.TH1F(str(tree.run)+"PLT",";Luminosity Section  ;Integrated Luminosity(ub^{-1})",nBins[tree.run],0,runLSMax[tree.run])
+            histPCLumiB3p8[key]=ROOT.TH1F(str(tree.run)+"PCLumiB3p8",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
+            histbest[key]=ROOT.TH1F(str(tree.run)+"best",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
+            histHFLumi[key]=ROOT.TH1F(str(tree.run)+"HF",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
+            histBCMFLumi[key]=ROOT.TH1F(str(tree.run)+"BCMF",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
+            histPLTLumi[key]=ROOT.TH1F(str(tree.run)+"PLT",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
             histPU[key]=ROOT.TH1F(str(tree.run)+"bestPU",";Luminosity Section  ;Pile-up",nBins[tree.run],0,runLSMax[tree.run])
             ReStyleHistogram(histbest[key],3)
             ReStyleHistogram(histPCLumiB3p8[key],3)
@@ -237,13 +237,13 @@ for ient in range(nentries):
             ReStyleHistogram(histBCMFLumi[key],3)
             ReStyleHistogram(histPLTLumi[key],3)
             ReStyleHistogram(histPU[key],3)
-        if tree.BestLumi>0:
-            histbest[key].Fill(tree.LS,tree.BestLumi_integrated)
-            histHFLumi[key].Fill(tree.LS,tree.HFLumi_integrated)
-            histBCMFLumi[key].Fill(tree.LS,tree.BCMFLumi_integrated)
-            histPLTLumi[key].Fill(tree.LS,tree.PLTLumi_integrated)
+        if tree.BestLumi>0:#This is where it is fed in
+            histbest[key].Fill(tree.LS,tree.BestLumi)
+            histHFLumi[key].Fill(tree.LS,tree.HFLumi)
+            histBCMFLumi[key].Fill(tree.LS,tree.BCMFLumi)
+            histPLTLumi[key].Fill(tree.LS,tree.PLTLumi)
             if tree.hasCMSData:
-                histPCLumiB3p8[key].Fill(tree.LS,tree.PC_lumi_integrated_B3p8*PCCscale*pcc_corr)
+                histPCLumiB3p8[key].Fill(tree.LS,tree.PC_lumi_B3p8*PCCscale*pcc_corr)
         if tree.BestLumi_PU>0:
             histPU[key].Fill(tree.LS,tree.BestLumi_PU*PCCscale*pcc_corr)
             print tree.BestLumi_PU
@@ -254,9 +254,9 @@ for ient in range(nentries):
                 bestBCM1f[tree.run]=0
                 bestPLT[tree.run]=0
             
-            diffBestHF=math.fabs(tree.HFLumi_integrated-tree.BestLumi_integrated)
-            diffBestBCMF=math.fabs(tree.BCMFLumi_integrated-tree.BestLumi_integrated)
-            diffBestPLT=math.fabs(tree.PLTLumi_integrated-tree.BestLumi_integrated)
+            diffBestHF=math.fabs(tree.HFLumi-tree.BestLumi)
+            diffBestBCMF=math.fabs(tree.BCMFLumi-tree.BestLumi)
+            diffBestPLT=math.fabs(tree.PLTLumi-tree.BestLumi)
             minLumi=min(diffBestHF,min(diffBestBCMF,diffBestPLT))
             if minLumi==diffBestHF:
                 bestHF[tree.run]=bestHF[tree.run]+1
@@ -366,16 +366,27 @@ for run in runsToCheck:
         histPLTLumi[run].Draw("histsame")
         histPCLumiB3p8[run].SetLineColor(802)
         histPCLumiB3p8[run].Draw("histsame")
-         
+
+	standInPC	= histPCLumiB3p8[run].Clone("PC")
+	standInHF	= histHFLumi[run].Clone("HF")
+	standInBCMF	= histBCMFLumi[run].Clone("BCMF")
+	standInPLT	= histPLTLumi[run].Clone("PLT")
+
+        mean7,meanError7=GetYAverage(standInPC,True)
+	mean8,meanError8=GetYAverage(standInHF,True)
+	mean9,meanError9=GetYAverage(standInBCMF,True)
+	mean10,meanError10=GetYAverage(standInPLT,True)
+
         leg=ROOT.TLegend(0.1,0.1,0.7,0.4)
         tot=1
         try:
             tot=float(bestHF[run]+bestBCM1f[run]+bestPLT[run])
             leg.AddEntry(histbest[run],"Best Lumi","l")
-            leg.AddEntry(histHFLumi[run],"HF: "+"{0:.1f}".format((bestHF[run]/tot)*100)+"%","l")
-            leg.AddEntry(histBCMFLumi[run],"BCM1f: "+"{0:.1f}".format((bestBCM1f[run]/tot)*100)+"%","l")
-            leg.AddEntry(histPLTLumi[run],"PLT: "+"{0:.1f}".format((bestPLT[run]/tot)*100)+"%","l")
-            leg.AddEntry(histPCLumiB3p8[run],"PCC - B=3.8","l")
+            leg.AddEntry(histHFLumi[run],"HF: "+"{0:.1f}".format((bestHF[run]/tot)*100)+"%,             Avg. Inst. = "+"{:5.1f}".format(mean8)+" #pm "+"{:5.1f}".format(meanError8),"l")
+            leg.AddEntry(histBCMFLumi[run],"BCM1f: "+"{0:.1f}".format((bestBCM1f[run]/tot)*100)+"%,   Avg. Inst. = "+"{:5.1f}".format(mean9)+" #pm "+"{:5.1f}".format(meanError9),"l")
+            leg.AddEntry(histPLTLumi[run],"PLT: "+"{0:.1f}".format((bestPLT[run]/tot)*100)+"%,           Avg. Inst. = "+"{:5.1f}".format(mean10)+" #pm "+"{:5.1f}".format(meanError10),"l")
+            leg.AddEntry(histPCLumiB3p8[run],"PCC - B=3.8,        Avg. Inst. = "+"{:5.1f}".format(mean7)+" #pm "+"{:5.1f}".format(meanError7),"l")
+
             leg.SetFillStyle(0)
             leg.SetBorderSize(0)
             leg.Draw("same")
@@ -446,7 +457,6 @@ for run in runsToCheck:
         leg2.Draw("sames")
         padlumis.Update()
 
-        
         if run in bothSets:
             padlumis.cd(3)
             histPU[run].Draw("hist")
