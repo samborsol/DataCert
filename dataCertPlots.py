@@ -225,11 +225,11 @@ for ient in range(nentries):
     if tree.hasBrilData:
         key=tree.run
         if not histbest.has_key(key):
-            histPCLumiB3p8[key]=ROOT.TH1F(str(tree.run)+"PCLumiB3p8",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
-            histbest[key]=ROOT.TH1F(str(tree.run)+"best",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
-            histHFLumi[key]=ROOT.TH1F(str(tree.run)+"HF",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
-            histBCMFLumi[key]=ROOT.TH1F(str(tree.run)+"BCMF",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
-            histPLTLumi[key]=ROOT.TH1F(str(tree.run)+"PLT",";Luminosity Section  ;Inst. Luminosity(Hz/microb)",nBins[tree.run],0,runLSMax[tree.run])
+            histPCLumiB3p8[key]=ROOT.TH1F(str(tree.run)+"PCLumiB3p8",";Luminosity Section  ;Inst. Luminosity(Hz/#mub)",nBins[tree.run],0,runLSMax[tree.run])
+            histbest[key]=ROOT.TH1F(str(tree.run)+"best",";Luminosity Section  ;Inst. Luminosity(Hz/#mub)",nBins[tree.run],0,runLSMax[tree.run])
+            histHFLumi[key]=ROOT.TH1F(str(tree.run)+"HF",";Luminosity Section  ;Inst. Luminosity(Hz/#mub)",nBins[tree.run],0,runLSMax[tree.run])
+            histBCMFLumi[key]=ROOT.TH1F(str(tree.run)+"BCMF",";Luminosity Section  ;Inst. Luminosity(Hz/#mub)",nBins[tree.run],0,runLSMax[tree.run])
+            histPLTLumi[key]=ROOT.TH1F(str(tree.run)+"PLT",";Luminosity Section  ;Inst. Luminosity(Hz/#mub)",nBins[tree.run],0,runLSMax[tree.run])
             histPU[key]=ROOT.TH1F(str(tree.run)+"bestPU",";Luminosity Section  ;Pile-up",nBins[tree.run],0,runLSMax[tree.run])
             ReStyleHistogram(histbest[key],3)
             ReStyleHistogram(histPCLumiB3p8[key],3)
@@ -264,7 +264,7 @@ for ient in range(nentries):
                 bestBCM1f[tree.run]=bestBCM1f[tree.run]+1
             elif minLumi==diffBestPLT:
                 bestPLT[tree.run]=bestPLT[tree.run]+1
-
+	
 
 tcan=ROOT.TCanvas("tcan","",1200*scale,700*scale)
 padlumis =ROOT.TPad("padlumis", "",0.0,0.0,0.5,1.0)
@@ -365,27 +365,29 @@ for run in runsToCheck:
         histPLTLumi[run].SetLineColor(601)
         histPLTLumi[run].Draw("histsame")
         histPCLumiB3p8[run].SetLineColor(802)
+	#histPCLumiB3p8[run]= histPCLumiB3p8[run].Integral() * 23.31;
         histPCLumiB3p8[run].Draw("histsame")
-
+	
 	standInPC	= histPCLumiB3p8[run].Clone("PC")
 	standInHF	= histHFLumi[run].Clone("HF")
 	standInBCMF	= histBCMFLumi[run].Clone("BCMF")
 	standInPLT	= histPLTLumi[run].Clone("PLT")
 
-        mean7,meanError7=GetYAverage(standInPC,True)
-	mean8,meanError8=GetYAverage(standInHF,True)
-	mean9,meanError9=GetYAverage(standInBCMF,True)
-	mean10,meanError10=GetYAverage(standInPLT,True)
+        mean7=standInPC.Integral()*23.32
+	mean8=standInHF.Integral()*23.32
+	mean9=standInBCMF.Integral()*23.32
+	mean10=standInPLT.Integral()*23.32
+	mean7=mean7*1.0000
 
         leg=ROOT.TLegend(0.1,0.1,0.7,0.4)
         tot=1
         try:
             tot=float(bestHF[run]+bestBCM1f[run]+bestPLT[run])
             leg.AddEntry(histbest[run],"Best Lumi","l")
-            leg.AddEntry(histHFLumi[run],"HF: "+"{0:.1f}".format((bestHF[run]/tot)*100)+"%,             Avg. Inst. = "+"{:5.1f}".format(mean8)+" #pm "+"{:5.1f}".format(meanError8),"l")
-            leg.AddEntry(histBCMFLumi[run],"BCM1f: "+"{0:.1f}".format((bestBCM1f[run]/tot)*100)+"%,   Avg. Inst. = "+"{:5.1f}".format(mean9)+" #pm "+"{:5.1f}".format(meanError9),"l")
-            leg.AddEntry(histPLTLumi[run],"PLT: "+"{0:.1f}".format((bestPLT[run]/tot)*100)+"%,           Avg. Inst. = "+"{:5.1f}".format(mean10)+" #pm "+"{:5.1f}".format(meanError10),"l")
-            leg.AddEntry(histPCLumiB3p8[run],"PCC - B=3.8,        Avg. Inst. = "+"{:5.1f}".format(mean7)+" #pm "+"{:5.1f}".format(meanError7),"l")
+            leg.AddEntry(histHFLumi[run],"HF: "+"{0:.1f}".format((bestHF[run]/tot)*100)+"%,        Integrated Lumi = "+"{:5.1f}".format(mean8),"l")#+" #pm "+"{:5.1f}".format(meanError8),"l")
+            leg.AddEntry(histBCMFLumi[run],"BCM1f: "+"{0:.1f}".format((bestBCM1f[run]/tot)*100)+"%, Integrated Lumi = "+"{:5.1f}".format(mean9),"l")#+" #pm "+"{:5.1f}".format(meanError9),"l")
+            leg.AddEntry(histPLTLumi[run],"PLT: "+"{0:.1f}".format((bestPLT[run]/tot)*100)+"%,  Integrated Lumi = "+"{:5.1f}".format(mean10),"l")#+" #pm "+"{:5.1f}".format(meanError10),"l")
+            leg.AddEntry(histPCLumiB3p8[run],"PCC - B=3.8,   Integrated Lumi = "+"{:5.1f}".format(mean7),"l")#,"l")
 
             leg.SetFillStyle(0)
             leg.SetBorderSize(0)
